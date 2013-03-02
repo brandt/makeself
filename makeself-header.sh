@@ -150,8 +150,8 @@ MS_Check()
     PATH=\${GUESS_MD5_PATH:-"\$OLD_PATH:/bin:/usr/bin:/sbin:/usr/local/ssl/bin:/usr/local/bin:/opt/openssl/bin"}
 	MD5_ARG=""
     MD5_PATH=\`exec <&- 2>&-; which md5sum || type md5sum\`
-    test -x "\$MD5_PATH" || MD5_PATH=\`exec <&- 2>&-; which md5 || type md5\`
-	test -x "\$MD5_PATH" || MD5_PATH=\`exec <&- 2>&-; which digest || type digest\`
+    test -x "\${MD5_PATH:-/dev/null}" || MD5_PATH=\`exec <&- 2>&-; which md5 || type md5\`
+	test -x "\${MD5_PATH:-/dev/null}" || MD5_PATH=\`exec <&- 2>&-; which digest || type digest\`
     PATH="\$OLD_PATH"
 
     if test "\$quiet" = "n";then
@@ -163,7 +163,7 @@ MS_Check()
     for s in \$filesizes
     do
 		crc=\`echo \$CRCsum | cut -d" " -f\$i\`
-		if test -x "\$MD5_PATH"; then
+		if test -x "\${MD5_PATH:-/dev/null}"; then
 			if test \`basename \$MD5_PATH\` = digest; then
 				MD5_ARG="-a md5"
 			fi

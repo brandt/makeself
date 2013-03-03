@@ -148,10 +148,21 @@ MS_Check()
 {
     OLD_PATH="\$PATH"
     PATH=\${GUESS_MD5_PATH:-"\$OLD_PATH:/bin:/usr/bin:/sbin:/usr/local/ssl/bin:/usr/local/bin:/opt/openssl/bin"}
-	MD5_ARG=""
-    MD5_PATH=\`exec <&- 2>&-; which md5sum || type md5sum\`
-    test -x "\${MD5_PATH:-/dev/null}" || MD5_PATH=\`exec <&- 2>&-; which md5 || type md5\`
-	test -x "\${MD5_PATH:-/dev/null}" || MD5_PATH=\`exec <&- 2>&-; which digest || type digest\`
+    if [ \`cat /dev/null | md5sum | awk '{ print \$NF }'\` = "d41d8cd98f00b204e9800998ecf8427e" ]; then
+      md5sum=\`cat "\$tmpfile" | md5sum | awk '{ print \$NF }'\`
+    elif [ \`cat /dev/null | md5 | awk '{ print \$NF }'\` = "d41d8cd98f00b204e9800998ecf8427e" ]; then
+      md5sum=\`cat "\$tmpfile" | md5 | awk '{ print \$NF }'\`
+    elif [ \`cat /dev/null | digest -a md5 | awk '{ print \$NF }'\` = "d41d8cd98f00b204e9800998ecf8427e" ]; then
+      md5sum=\`cat "\$tmpfile" | digest -a md5 | awk '{ print \$NF }'\`
+    elif [ \`cat /dev/null | openssl dgst -md5 | awk '{ print \$NF }'\` = "d41d8cd98f00b204e9800998ecf8427e" ]; then
+      md5sum=\`cat "\$tmpfile" | openssl dgst -md5 | awk '{ print \$NF }'\`
+    fi
+
+    if test "\$md5sum" ; then
+      echo "MD5: \$md5sum"
+    else
+      echo "MD5: none, MD5 command not found"
+    fi
     PATH="\$OLD_PATH"
 
     if test "\$quiet" = "n";then

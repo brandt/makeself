@@ -441,13 +441,13 @@ else
 	# Try to locate a MD5 binary
 	OLD_PATH=$PATH
 	PATH=${GUESS_MD5_PATH:-"$OLD_PATH:/bin:/usr/bin:/sbin:/usr/local/ssl/bin:/usr/local/bin:/opt/openssl/bin"}
-    if [ `md5sum /dev/null | awk '{ print $NF }'` = "d41d8cd98f00b204e9800998ecf8427e" ]; then
+    if test `md5sum /dev/null | awk '{ print $NF }'` = "d41d8cd98f00b204e9800998ecf8427e" ; then
       md5sum=`cat "$tmpfile" | md5sum | awk '{ print $NF }'`
-    elif [ `md5 /dev/null | awk '{ print $NF }'` = "d41d8cd98f00b204e9800998ecf8427e" ]; then
+    elif test `md5 /dev/null | awk '{ print $NF }'` = "d41d8cd98f00b204e9800998ecf8427e" ; then
       md5sum=`cat "$tmpfile" | md5 | awk '{ print $NF }'`
-    elif [ `digest -a md5 /dev/null | awk '{ print $NF }'` = "d41d8cd98f00b204e9800998ecf8427e" ]; then
+    elif test `digest -a md5 /dev/null | awk '{ print $NF }'` = "d41d8cd98f00b204e9800998ecf8427e" ; then
       md5sum=`cat "$tmpfile" | digest -a md5 | awk '{ print $NF }'`
-    elif [ `openssl dgst -md5 /dev/null | awk '{ print $NF }'` = "d41d8cd98f00b204e9800998ecf8427e" ]; then
+    elif test `openssl dgst -md5 /dev/null | awk '{ print $NF }'` = "d41d8cd98f00b204e9800998ecf8427e" ; then
       md5sum=`cat "$tmpfile" | openssl dgst -md5 | awk '{ print $NF }'`
     fi
 

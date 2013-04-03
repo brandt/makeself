@@ -441,17 +441,21 @@ else
 	# Try to locate a MD5 binary
 	OLD_PATH=$PATH
 	PATH=${GUESS_MD5_PATH:-"$OLD_PATH:/bin:/usr/bin:/sbin:/usr/local/ssl/bin:/usr/local/bin:/opt/openssl/bin"}
-    if test `md5sum /dev/null | awk '{ print $NF }'` = "d41d8cd98f00b204e9800998ecf8427e" ; then
-      md5sum=`cat "$tmpfile" | md5sum | awk '{ print $NF }'`
-    elif test `md5 /dev/null | awk '{ print $NF }'` = "d41d8cd98f00b204e9800998ecf8427e" ; then
-      md5sum=`cat "$tmpfile" | md5 | awk '{ print $NF }'`
-    elif test `digest -a md5 /dev/null | awk '{ print $NF }'` = "d41d8cd98f00b204e9800998ecf8427e" ; then
-      md5sum=`cat "$tmpfile" | digest -a md5 | awk '{ print $NF }'`
-    elif test `openssl dgst -md5 /dev/null | awk '{ print $NF }'` = "d41d8cd98f00b204e9800998ecf8427e" ; then
-      md5sum=`cat "$tmpfile" | openssl dgst -md5 | awk '{ print $NF }'`
-    fi
+    for MD5_CMD in md5sum md5 digest openssl ; do
+        case $MD5_CMD in
+            digest)  MD5_ARG="-a md5"    ;;
+            openssl) MD5_ARG="dgst -md5" ;;
+            *)       MD5_ARG=""          ;;
+        esac
+        if ( test `$MD5_CMD $MD5_ARG /dev/null | awk '{ print $NF }'` = "d41d8cd98f00b204e9800998ecf8427e" ) >/dev/null 2>&1 ; then
+            md5sum=`cat "$tmpfile" | eval "$MD5_CMD $MD5_ARG" | awk '{ print $NF }'`
+            break
+        fi
+        unset MD5_CMD
+        unset MD5_ARG
+    done
 
-    if test $md5sum ; then
+    if test "$md5sum" ; then
       echo "MD5: $md5sum"
     else
       echo "MD5: none, MD5 command not found"

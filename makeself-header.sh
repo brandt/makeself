@@ -17,6 +17,10 @@ filesizes="$filesizes"
 keep="$KEEP"
 quiet="n"
 
+
+OLD_PATH="\$PATH"
+PATH=\${GUESS_MD5_PATH:-"\$OLD_PATH:/bin:/usr/bin:/sbin:/usr/local/ssl/bin:/usr/local/bin:/opt/openssl/bin"}
+
 print_cmd_arg=""
 if type printf > /dev/null; then
     print_cmd="printf"
@@ -43,8 +47,8 @@ MS_PrintLicense()
       read yn
       if test x"\$yn" = xn; then
         keep=n
- 	eval \$finish; exit 1        
-        break;    
+ 	eval \$finish; exit 1
+        break;
       elif test x"\$yn" = xy; then
         break;
       fi
@@ -144,27 +148,25 @@ Makeself version $MS_VERSION
 EOH
 }
 
+MS_getmd5cmd()
+{
+    for MD5_CMD in md5sum md5 digest openssl ; do
+        case \$MD5_CMD in
+            digest)  MD5_ARG="-a md5"    ;;
+            openssl) MD5_ARG="dgst -md5" ;;
+            *) MD5_ARG=""                ;;
+        esac
+        if ( test \`\$MD5_CMD \$MD5_ARG /dev/null | awk '{ print \$NF }'\` = "d41d8cd98f00b204e9800998ecf8427e" ) >/dev/null 2>&1 ; then
+            break
+        fi
+        unset MD5_CMD
+        unset MD5_ARG
+    done
+    test "\$MD5_CMD" || return 1
+}
+
 MS_Check()
 {
-    OLD_PATH="\$PATH"
-    PATH=\${GUESS_MD5_PATH:-"\$OLD_PATH:/bin:/usr/bin:/sbin:/usr/local/ssl/bin:/usr/local/bin:/opt/openssl/bin"}
-    if test \`cat /dev/null | md5sum | awk '{ print \$NF }'\` = "d41d8cd98f00b204e9800998ecf8427e" ; then
-      md5sum=\`cat "\$tmpfile" | md5sum | awk '{ print \$NF }'\`
-    elif test \`cat /dev/null | md5 | awk '{ print \$NF }'\` = "d41d8cd98f00b204e9800998ecf8427e" ; then
-      md5sum=\`cat "\$tmpfile" | md5 | awk '{ print \$NF }'\`
-    elif test \`cat /dev/null | digest -a md5 | awk '{ print \$NF }'\` = "d41d8cd98f00b204e9800998ecf8427e" ; then
-      md5sum=\`cat "\$tmpfile" | digest -a md5 | awk '{ print \$NF }'\`
-    elif test \`cat /dev/null | openssl dgst -md5 | awk '{ print \$NF }'\` = "d41d8cd98f00b204e9800998ecf8427e" ; then
-      md5sum=\`cat "\$tmpfile" | openssl dgst -md5 | awk '{ print \$NF }'\`
-    fi
-
-    if test "\$md5sum" ; then
-      echo "MD5: \$md5sum"
-    else
-      echo "MD5: none, MD5 command not found"
-    fi
-    PATH="\$OLD_PATH"
-
     if test "\$quiet" = "n";then
     	MS_Printf "Verifying archive integrity..."
     fi
@@ -174,15 +176,12 @@ MS_Check()
     for s in \$filesizes
     do
 		crc=\`echo \$CRCsum | cut -d" " -f\$i\`
-		if test -x "\${MD5_PATH:-/dev/null}"; then
-			if test \`basename \$MD5_PATH\` = digest; then
-				MD5_ARG="-a md5"
-			fi
+		if MS_getmd5cmd ; then
 			md5=\`echo \$MD5 | cut -d" " -f\$i\`
 			if test \$md5 = "00000000000000000000000000000000"; then
 				test x\$verb = xy && echo " \$1 does not contain an embedded MD5 checksum." >&2
 			else
-				md5sum=\`MS_dd "\$1" \$offset \$s | eval "\$MD5_PATH \$MD5_ARG" | cut -b-32\`;
+				md5sum=\`MS_dd "\$1" \$offset \$s | eval "\$MD5_CMD \$MD5_ARG" | awk '{ print \$NF }'\`;
 				if test "\$md5sum" != "\$md5"; then
 					echo "Error in MD5 checksums: \$md5sum is different from \$md5" >&2
 					exit 2
@@ -484,6 +483,8 @@ done
 if test "\$quiet" = "n";then
 	echo
 fi
+
+PATH="\$OLD_PATH"
 
 cd "\$tmpdir"
 res=0
